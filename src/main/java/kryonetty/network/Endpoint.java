@@ -1,11 +1,10 @@
 
-package kryonetty.net;
+package kryonetty.network;
 
-import kryonetty.Request;
 import io.netty.channel.ChannelHandlerContext;
+import kryonetty.Request;
 
-public interface Endpoint
-{
+public interface Endpoint {
     void connected(ChannelHandlerContext ctx);
 
     void disconnected(ChannelHandlerContext ctx);

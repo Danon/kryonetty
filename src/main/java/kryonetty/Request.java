@@ -1,5 +1,4 @@
 package kryonetty;
 
-public interface Request
-{
+public interface Request {
 }

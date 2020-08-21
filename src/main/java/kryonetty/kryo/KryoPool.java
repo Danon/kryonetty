@@ -1,4 +1,4 @@
-package kryonetty;
+package kryonetty.kryo;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
@@ -9,8 +9,7 @@ import java.util.function.Supplier;
 
 import static java.util.Arrays.stream;
 
-public class KryoPool
-{
+public class KryoPool {
     private final Pool<Kryo> kryoPool;
     private final Pool<Input> inputPool;
     private final Pool<Output> outputPool;
@@ -52,8 +51,7 @@ public class KryoPool
     }
 
     private static <T> Pool<T> pool(Supplier<T> supplier) {
-        return new Pool<T>(true, true)
-        {
+        return new Pool<T>(true, true) {
             @Override
             protected T create() {
                 return supplier.get();

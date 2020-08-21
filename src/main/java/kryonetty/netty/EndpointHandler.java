@@ -1,12 +1,11 @@
-package kryonetty.codec;
+package kryonetty.netty;
 
-import kryonetty.Request;
-import kryonetty.net.Endpoint;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import kryonetty.Request;
+import kryonetty.network.Endpoint;
 
-public class EndpointHandler extends SimpleChannelInboundHandler<Request>
-{
+public class EndpointHandler extends SimpleChannelInboundHandler<Request> {
     private final Endpoint endpoint;
 
     public EndpointHandler(Endpoint endpoint) {
