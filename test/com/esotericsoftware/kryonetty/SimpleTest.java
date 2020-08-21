@@ -1,87 +1,87 @@
 
 package com.esotericsoftware.kryonetty;
 
+import com.esotericsoftware.kryonetty.net.Client;
+import com.esotericsoftware.kryonetty.net.Endpoint;
+import com.esotericsoftware.kryonetty.net.Server;
 import io.netty.channel.ChannelHandlerContext;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.net.InetSocketAddress;
+import java.util.function.Consumer;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 
-public class SimpleTest {
-	protected static boolean testRequestReceived;
-	private static Server server;
-	private static Client client;
+public class SimpleTest
+{
+    private Server server;
+    private Client client;
 
-	@BeforeClass
-	public static void setupClass() {
-		server = new Server() {
-			public void connected (ChannelHandlerContext ctx) {
-				System.out.println("Server: Client connected: " + ctx.channel().remoteAddress());
-				ctx.channel().write("make a programmer rich");
-			}
+    @Test
+    public void shouldSendAndReceive() throws InterruptedException {
+        // given
+        client = new Client(holder(), clientListener(() -> client.send(new TestRequest("Bwuk!"))));
+        server = new Server(holder(), serverListener(request -> {
+            // then
+            server.close();
+            client.close();
+            assertEquals("Bwuk!", request.someText);
 
-			public void disconnected (ChannelHandlerContext ctx) {
-				System.out.println("Server: Client disconnected: " + ctx.channel().remoteAddress());
-			}
+            synchronized (this) {
+                notify();
+            }
+        }));
 
-			public void received (ChannelHandlerContext ctx, Object object) {
-				System.out.println("Server: Received: " + object);
-				if(object instanceof TestRequest) {
-					testRequestReceived = true;
-				}
-			}
+        // start
+        server.start(54321);
+        client.connect(new InetSocketAddress("localhost", 54321));
 
-			@Override
-			public KryoHolder getKryoHolder() {
-				return new KryoHolder(-1, -1, String.class, TestRequest.class);
-			}
-		};
-		client = new Client() {
-			public void connected (ChannelHandlerContext ctx) {
-				System.out.println("Client: Connected to server: " + ctx.channel().remoteAddress());
-			}
+        // wait
+        synchronized (this) {
+            wait();
+        }
+    }
 
-			public void disconnected (ChannelHandlerContext ctx) {
-				System.out.println("Client: Disconnected from server: " + ctx.channel().remoteAddress());
-			}
+    private Endpoint clientListener(Runnable onConnect) {
+        return new Endpoint()
+        {
+            public void connected(ChannelHandlerContext ctx) {
+                System.out.println("Client: Connected to server: " + ctx.channel().remoteAddress());
+                onConnect.run();
+            }
 
-			public void received (ChannelHandlerContext ctx, Object object) {
-				System.out.println("Client: Received: " + object);
-			}
+            public void disconnected(ChannelHandlerContext ctx) {
+                System.out.println("Client: Disconnected from server: " + ctx.channel().remoteAddress());
+            }
 
-			@Override
-			public KryoHolder getKryoHolder() {
-				return new KryoHolder(-1, -1, String.class, TestRequest.class);
-			}
-		};
-		
-		server.start(54321);
-		client.connect(new InetSocketAddress("localhost", 54321));
-	}
-	
-	@AfterClass
-	public static void afterClass() {
-		client.close();
-		server.close();
-	}
+            public void received(ChannelHandlerContext ctx, Request object) {
+                System.out.println("Client: Received: " + object);
+            }
+        };
+    }
 
-	@Test
-	public void testSimple () throws Exception {
-		System.out.println("== Test Simple Behaviour == ");
-		client.send("i like the way you do it right thurrrr");
-		Thread.sleep(1000);
-	}
-	
-	@Test
-	public void testCustomClass() throws Exception {
-		System.out.println("== Test Custom Class Behaviour == ");
-		TestRequest request = new TestRequest();
-		request.someText = "Bwuk!";
-		client.send(request);
-		Thread.sleep(1000);
-		assertTrue(testRequestReceived);
-	}
+    private Endpoint serverListener(Consumer<TestRequest> received) {
+        return new Endpoint()
+        {
+            public void connected(ChannelHandlerContext ctx) {
+                System.out.println("Server: Client connected: " + ctx.channel().remoteAddress());
+                ctx.channel().write("make a programmer rich");
+            }
+
+            public void disconnected(ChannelHandlerContext ctx) {
+                System.out.println("Server: Client disconnected: " + ctx.channel().remoteAddress());
+            }
+
+            public void received(ChannelHandlerContext ctx, Request object) {
+                System.out.println("Server: Received: " + object);
+                if (object instanceof TestRequest) {
+                    received.accept((TestRequest) object);
+                }
+            }
+        };
+    }
+
+    private KryoPool holder() {
+        return new KryoPool(TestRequest.class);
+    }
 }

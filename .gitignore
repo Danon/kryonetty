@@ -1,7 +1,4 @@
-# Temporary Files
-*~
-.*.swp
-.DS_STORE
-
-bin/
-target/
+# Project
+.idea/
+*.iml
+out/
